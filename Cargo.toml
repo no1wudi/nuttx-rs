@@ -1,0 +1,17 @@
+[package]
+name = "nuttx"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+libc = { version = "0.2", default-features = false, features = [] }
+
+[features]
+# Enable FB overlay support (matches CONFIG_FB_OVERLAY)
+fb_overlay = []
+# Enable FB module info support (matches CONFIG_FB_MODULEINFO)
+fb_moduleinfo = []
+# Enable FB update support (matches CONFIG_FB_UPDATE)
+fb_update = []
+# Enable FB sync support (matches CONFIG_FB_SYNC)
+fb_sync = []
