@@ -9,7 +9,7 @@
 
 use core::ffi::CStr;
 use core::mem::size_of;
-use libc::{O_RDONLY, c_int, c_void, open, read};
+use libc::{O_RDONLY, c_int, c_void, open, read, fcntl, F_GETFL, F_SETFL, O_NONBLOCK};
 
 /// Represents a single touch point with position, size, pressure and timing information
 ///
@@ -164,7 +164,7 @@ impl TouchScreen {
     /// - Ok(TouchScreen) on success
     /// - Err(i32) with error code if the device could not be opened
     pub fn open(path: &CStr) -> Result<Self, i32> {
-        let fd = unsafe { open(path.as_ptr(), O_RDONLY) };
+        let fd = unsafe { open(path.as_ptr(), O_RDONLY | O_NONBLOCK) };
         if fd < 0 {
             return Err(fd);
         }
