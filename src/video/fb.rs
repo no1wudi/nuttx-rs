@@ -189,3 +189,19 @@ impl FrameBuffer {
         Ok(())
     }
 }
+
+impl Drop for FrameBuffer {
+    /// Automatically closes the framebuffer device when the FrameBuffer instance goes out of scope
+    ///
+    /// This ensures that system resources are properly released even if the FrameBuffer
+    /// instance is not explicitly closed. The underlying file descriptor is closed
+    /// using the libc::close() function.
+    ///
+    /// # Safety
+    /// This function is marked unsafe because it calls into C code through libc::close().
+    /// The file descriptor is guaranteed to be valid as it's managed by the FrameBuffer
+    /// struct and only set during successful initialization.
+    fn drop(&mut self) {
+        unsafe { libc::close(self.fd) };
+    }
+}
