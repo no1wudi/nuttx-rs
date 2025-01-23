@@ -1,4 +1,22 @@
-//! Framebuffer interface bindings, see `nuttx/include/nuttx/video/fb.h`
+//! Framebuffer interface bindings for NuttX
+//!
+//! This module provides Rust bindings for the NuttX framebuffer driver interface.
+//! It allows interacting with framebuffer devices to get display information,
+//! manage framebuffer memory, and update display regions.
+//!
+//! The implementation matches the NuttX framebuffer interface defined in
+//! `nuttx/include/nuttx/video/fb.h`.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use core::ffi::CStr;
+//! use nuttx::video::fb::{FrameBuffer, Format};
+//!
+//! let fb = FrameBuffer::new(CStr::from_bytes_with_nul(b"/dev/fb0\0").unwrap()).unwrap();
+//! let info = fb.get_video_info().unwrap();
+//! assert_eq!(info.fmt, Format::RGB565 as u8);
+//! ```
 
 use core::ffi::{CStr, c_void};
 
