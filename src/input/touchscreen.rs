@@ -124,26 +124,34 @@ impl TouchPoint {
     }
 }
 
-/// Touch event flags matching NuttX TOUCH_* definitions
-///
-/// These flags indicate the state and validity of touch data
+/// A new touch contact is established
 pub const TOUCH_DOWN: u8 = 1 << 0;
+/// Movement occurred with previously reported contact
 pub const TOUCH_MOVE: u8 = 1 << 1;
+/// The touch contact was lost
 pub const TOUCH_UP: u8 = 1 << 2;
+/// Touch ID is certain
 pub const TOUCH_ID_VALID: u8 = 1 << 3;
+/// Hardware provided a valid X/Y position
 pub const TOUCH_POS_VALID: u8 = 1 << 4;
+/// Hardware provided a valid pressure
 pub const TOUCH_PRESSURE_VALID: u8 = 1 << 5;
+/// Hardware provided a valid H/W contact size
 pub const TOUCH_SIZE_VALID: u8 = 1 << 6;
+/// Hardware provided a valid gesture
 pub const TOUCH_GESTURE_VALID: u8 = 1 << 7;
 
-/// Touch gesture types matching NuttX TOUCH_* definitions
-///
-/// These values indicate the type of gesture detected by the touchscreen
+/// Double click gesture
 pub const TOUCH_DOUBLE_CLICK: u16 = 0x00;
+/// Slide up gesture
 pub const TOUCH_SLIDE_UP: u16 = 0x01;
+/// Slide down gesture
 pub const TOUCH_SLIDE_DOWN: u16 = 0x02;
+/// Slide left gesture
 pub const TOUCH_SLIDE_LEFT: u16 = 0x03;
+/// Slide right gesture
 pub const TOUCH_SLIDE_RIGHT: u16 = 0x04;
+/// Palm gesture
 pub const TOUCH_PALM: u16 = 0x05;
 
 /// Represents an open connection to a touchscreen input device
