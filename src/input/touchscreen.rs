@@ -11,76 +11,24 @@ use core::ffi::CStr;
 use core::mem::size_of;
 use libc::{O_NONBLOCK, O_RDONLY, c_int, c_void, open, read};
 
-/// A new touch contact is established
-pub const TOUCH_DOWN: u8 = 1 << 0;
-/// Movement occurred with previously reported contact
-pub const TOUCH_MOVE: u8 = 1 << 1;
-/// The touch contact was lost
-pub const TOUCH_UP: u8 = 1 << 2;
-/// Touch ID is certain
-pub const TOUCH_ID_VALID: u8 = 1 << 3;
-/// Hardware provided a valid X/Y position
-pub const TOUCH_POS_VALID: u8 = 1 << 4;
-/// Hardware provided a valid pressure
-pub const TOUCH_PRESSURE_VALID: u8 = 1 << 5;
-/// Hardware provided a valid H/W contact size
-pub const TOUCH_SIZE_VALID: u8 = 1 << 6;
-/// Hardware provided a valid gesture
-pub const TOUCH_GESTURE_VALID: u8 = 1 << 7;
-
-/// Double click gesture
-pub const TOUCH_DOUBLE_CLICK: u16 = 0x00;
-/// Slide up gesture
-pub const TOUCH_SLIDE_UP: u16 = 0x01;
-/// Slide down gesture
-pub const TOUCH_SLIDE_DOWN: u16 = 0x02;
-/// Slide left gesture
-pub const TOUCH_SLIDE_LEFT: u16 = 0x03;
-/// Slide right gesture
-pub const TOUCH_SLIDE_RIGHT: u16 = 0x04;
-/// Palm gesture
-pub const TOUCH_PALM: u16 = 0x05;
+use crate::bindings::{
+    TOUCH_DOWN, TOUCH_GESTURE_VALID, TOUCH_ID_VALID, TOUCH_MOVE, TOUCH_POS_VALID,
+    TOUCH_PRESSURE_VALID, TOUCH_SIZE_VALID, TOUCH_UP, touch_point_s, touch_sample_s,
+};
 
 /// Represents a single touch point with position, size, pressure and timing information
 ///
-/// This matches the C `touch_point_s` structure from NuttX's touchscreen.h.
+/// This is an alias for the C `touch_point_s` structure from NuttX's touchscreen.h.
 /// Each touch point has a unique ID that persists from touch down through move events
 /// until the touch is released.
-#[repr(C)]
-#[derive(Debug, Clone, Copy, Default)]
-pub struct TouchPoint {
-    /// Unique identifies contact; Same in all reports for the contact
-    pub id: u8,
-    /// See TOUCH_* definitions above
-    pub flags: u8,
-    /// X coordinate of the touch point (uncalibrated)
-    pub x: i16,
-    /// Y coordinate of the touch point (uncalibrated)
-    pub y: i16,
-    /// Height of touch point (uncalibrated)
-    pub h: i16,
-    /// Width of touch point (uncalibrated)
-    pub w: i16,
-    /// Gesture of touchscreen contact
-    pub gesture: u16,
-    /// Touch pressure
-    pub pressure: u16,
-    /// Touch event time stamp, in microseconds
-    pub timestamp: u64,
-}
+pub type TouchPoint = touch_point_s;
 
 /// Contains a set of touch points from a single touch event
 ///
 /// This matches the C `touch_sample_s` structure from NuttX's touchscreen.h.
 /// The actual number of touch points is indicated by `npoints`, with the
 /// points stored in the `point` array.
-#[repr(C)]
-pub struct TouchSample {
-    /// The number of touch points in point[]
-    pub npoints: c_int,
-    /// Actual dimension is npoints
-    pub point: [TouchPoint; 1],
-}
+pub type TouchSample = touch_sample_s;
 
 /// Represents an open connection to a touchscreen input device
 ///
@@ -90,19 +38,31 @@ pub struct TouchScreen {
     fd: c_int,
 }
 
-impl TouchPoint {
+impl Default for TouchPoint {
     /// Creates a new TouchPoint with default/zero values
-    pub fn new() -> Self {
-        Self::default()
+    fn default() -> Self {
+        Self {
+            id: 0,
+            flags: 0,
+            x: 0,
+            y: 0,
+            h: 0,
+            w: 0,
+            gesture: 0,
+            pressure: 0,
+            timestamp: 0,
+        }
     }
+}
 
+impl TouchPoint {
     /// Checks if the touch point has valid position data
     ///
     /// # Returns
     /// true if the TOUCH_POS_VALID flag is set, indicating the x/y coordinates
     /// are valid
     pub fn is_pos_valid(&self) -> bool {
-        self.flags & TOUCH_POS_VALID != 0
+        self.flags & (TOUCH_POS_VALID as u8) != 0
     }
 
     /// Checks if this touch point represents a new touch down event
@@ -110,7 +70,7 @@ impl TouchPoint {
     /// # Returns
     /// true if the TOUCH_DOWN flag is set, indicating a new touch contact
     pub fn is_touch_down(&self) -> bool {
-        self.flags & TOUCH_DOWN != 0
+        self.flags & (TOUCH_DOWN as u8) != 0
     }
 
     /// Checks if this touch point represents a movement event
@@ -118,7 +78,7 @@ impl TouchPoint {
     /// # Returns
     /// true if the TOUCH_MOVE flag is set, indicating movement with previously reported contact
     pub fn is_touch_move(&self) -> bool {
-        self.flags & TOUCH_MOVE != 0
+        self.flags & (TOUCH_MOVE as u8) != 0
     }
 
     /// Checks if this touch point represents a touch release event
@@ -126,7 +86,7 @@ impl TouchPoint {
     /// # Returns
     /// true if the TOUCH_UP flag is set, indicating the touch contact was lost
     pub fn is_touch_up(&self) -> bool {
-        self.flags & TOUCH_UP != 0
+        self.flags & (TOUCH_UP as u8) != 0
     }
 
     /// Checks if the touch point ID is valid
@@ -134,7 +94,7 @@ impl TouchPoint {
     /// # Returns
     /// true if the TOUCH_ID_VALID flag is set, indicating the touch ID is certain
     pub fn is_id_valid(&self) -> bool {
-        self.flags & TOUCH_ID_VALID != 0
+        self.flags & (TOUCH_ID_VALID as u8) != 0
     }
 
     /// Checks if the touch point pressure data is valid
@@ -142,7 +102,7 @@ impl TouchPoint {
     /// # Returns
     /// true if the TOUCH_PRESSURE_VALID flag is set, indicating the pressure value is valid
     pub fn is_pressure_valid(&self) -> bool {
-        self.flags & TOUCH_PRESSURE_VALID != 0
+        self.flags & (TOUCH_PRESSURE_VALID as u8) != 0
     }
 
     /// Checks if the touch point size data is valid
@@ -150,7 +110,7 @@ impl TouchPoint {
     /// # Returns
     /// true if the TOUCH_SIZE_VALID flag is set, indicating the width/height values are valid
     pub fn is_size_valid(&self) -> bool {
-        self.flags & TOUCH_SIZE_VALID != 0
+        self.flags & (TOUCH_SIZE_VALID as u8) != 0
     }
 
     /// Checks if the touch point gesture data is valid
@@ -158,7 +118,7 @@ impl TouchPoint {
     /// # Returns
     /// true if the TOUCH_GESTURE_VALID flag is set, indicating the gesture value is valid
     pub fn is_gesture_valid(&self) -> bool {
-        self.flags & TOUCH_GESTURE_VALID != 0
+        self.flags & (TOUCH_GESTURE_VALID as u8) != 0
     }
 }
 
@@ -205,10 +165,7 @@ impl TouchScreen {
     ///   only the first point will be available.
     /// - Check the flags field in each TouchPoint to determine if the data is valid
     pub fn read_sample(&mut self) -> Result<TouchSample, i32> {
-        let mut sample = TouchSample {
-            npoints: 0,
-            point: [TouchPoint::default()],
-        };
+        let mut sample: TouchSample = unsafe { core::mem::zeroed() };
 
         let bytes_read = unsafe {
             read(

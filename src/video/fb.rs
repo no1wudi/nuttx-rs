@@ -11,108 +11,58 @@
 //!
 //! ```no_run
 //! use core::ffi::CStr;
-//! use nuttx::video::fb::{FrameBuffer, Format};
+//! use nuttx::video::fb::{FrameBuffer, FB_FMT_RGB16_565};
 //!
 //! let fb = FrameBuffer::new(CStr::from_bytes_with_nul(b"/dev/fb0\0").unwrap()).unwrap();
 //! let info = fb.get_video_info().unwrap();
-//! assert_eq!(info.fmt, Format::RGB565 as u8);
+//! assert_eq!(info.fmt, FB_FMT_RGB16_565);
 //! ```
 
+use crate::bindings;
 use core::ffi::{CStr, c_void};
+use kconfig::kconfig;
 
-/// Color format definitions
-///
-/// Matches C's FB_FMT_* constants
-#[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Format {
-    /// BPP=16, R=5, G=6, B=5
-    RGB565 = 11,
-}
+// Re-export only RGB family of framebuffer format constants
+pub use bindings::{
+    FB_FMT_RGB4, FB_FMT_RGB8, FB_FMT_RGB8_222, FB_FMT_RGB8_332, FB_FMT_RGB12_444, FB_FMT_RGB16_555,
+    FB_FMT_RGB16_565, FB_FMT_RGB24, FB_FMT_RGB32, FB_FMT_RGBA16, FB_FMT_RGBA32,
+};
 
 /// Coordinate type used in framebuffer structures
 ///
 /// Matches C's `fb_coord_t` which is a uint16_t
-pub type Coord = u16;
+pub type Coord = bindings::fb_coord_t;
+
+/// Video controller information structure
+///
+/// Alias for C's `fb_videoinfo_s`
+pub type VideoInfo = bindings::fb_videoinfo_s;
+
+/// Plane information structure
+///
+/// Alias for C's `fb_planeinfo_s`
+pub type PlaneInfo = bindings::fb_planeinfo_s;
+
+/// Area structure describing a rectangular region
+///
+/// Alias for C's `fb_area_s`
+pub type Area = bindings::fb_area_s;
 
 /// IOCTL command to get video information
 ///
 /// Matches C's FBIOGET_VIDEOINFO
-pub const FBIOGET_VIDEOINFO: i32 = 0x2801;
+const FBIOGET_VIDEOINFO: i32 = 0x2801;
 
 /// IOCTL command to get plane information
 ///
 /// Matches C's FBIOGET_PLANEINFO
-pub const FBIOGET_PLANEINFO: i32 = 0x2802;
+const FBIOGET_PLANEINFO: i32 = 0x2802;
 
 /// IOCTL command to update a rectangular region in the framebuffer
 ///
 /// Matches C's FBIO_UPDATE
-pub const FBIO_UPDATE: i32 = 0x2807;
-
-/// Video controller information structure
-///
-/// Matches C's `fb_videoinfo_s`
-#[repr(C)]
-#[derive(Debug, Clone, Copy, Default)]
-pub struct VideoInfo {
-    /// Color format, see Format enum
-    pub fmt: u8,
-    /// Horizontal resolution in pixel columns
-    pub xres: Coord,
-    /// Vertical resolution in pixel rows
-    pub yres: Coord,
-    /// Number of color planes supported
-    pub nplanes: u8,
-    /// Number of overlays supported (if fb_overlay feature enabled)
-    #[cfg(feature = "fb_overlay")]
-    pub noverlays: u8,
-    /// Module information filled by vendor (if fb_moduleinfo feature enabled)
-    #[cfg(feature = "fb_moduleinfo")]
-    pub moduleinfo: [u8; 128],
-}
-
-/// Plane information structure
-///
-/// Matches C's `fb_planeinfo_s`
-#[repr(C)]
-#[derive(Debug, Clone, Copy, Default)]
-pub struct PlaneInfo {
-    /// Start of frame buffer memory
-    pub fbmem: usize,
-    /// Length of frame buffer memory in bytes
-    pub fblen: usize,
-    /// Length of a line in bytes
-    pub stride: Coord,
-    /// Display number
-    pub display: u8,
-    /// Bits per pixel
-    pub bpp: u8,
-    /// Virtual Horizontal resolution in pixel columns
-    pub xres_virtual: u32,
-    /// Virtual Vertical resolution in pixel rows
-    pub yres_virtual: u32,
-    /// Offset from virtual to visible resolution
-    pub xoffset: u32,
-    /// Offset from virtual to visible resolution
-    pub yoffset: u32,
-}
-
-/// Area structure describing a rectangular region
-///
-/// Matches C's `fb_area_s`
-#[repr(C)]
-#[derive(Debug, Clone, Copy, Default)]
-pub struct Area {
-    /// x-offset of the area
-    pub x: Coord,
-    /// y-offset of the area
-    pub y: Coord,
-    /// Width of the area
-    pub w: Coord,
-    /// Height of the area
-    pub h: Coord,
-}
+#[allow(dead_code)]
+const FBIO_UPDATE: i32 = 0x2807;
 
 /// Result type for framebuffer operations
 pub type FrameBufferResult<T> = Result<T, i32>;
@@ -141,7 +91,7 @@ impl FrameBuffer {
     /// # Errors
     /// Returns `FrameBufferError::PlaneInfoFailed` if the ioctl fails
     pub fn get_video_info(&self) -> FrameBufferResult<VideoInfo> {
-        let mut info = VideoInfo::default();
+        let mut info = unsafe { core::mem::zeroed::<VideoInfo>() };
 
         // SAFETY: We're passing valid pointers to the ioctl
         let result = unsafe {
@@ -163,7 +113,7 @@ impl FrameBuffer {
     /// # Errors
     /// Returns a libc error code if the ioctl fails
     pub fn get_plane_info(&self) -> FrameBufferResult<PlaneInfo> {
-        let mut info = PlaneInfo::default();
+        let mut info = unsafe { core::mem::zeroed::<PlaneInfo>() };
 
         // SAFETY: We're passing valid pointers to the ioctl
         let result = unsafe {
@@ -184,7 +134,7 @@ impl FrameBuffer {
     ///
     /// # Errors
     /// Returns a libc error code if the ioctl fails
-    #[cfg(feature = "fb_update")]
+    #[kconfig(CONFIG_FB_UPDATE = "y")]
     pub fn update_area(&self, area: &Area) -> FrameBufferResult<()> {
         // SAFETY: We're passing valid pointers to the ioctl
         let result = unsafe {
@@ -202,7 +152,7 @@ impl FrameBuffer {
         }
     }
 
-    #[cfg(not(feature = "fb_update"))]
+    #[kconfig(CONFIG_FB_UPDATE = "n")]
     pub fn update_area(&self, _area: &Area) -> FrameBufferResult<()> {
         Ok(())
     }

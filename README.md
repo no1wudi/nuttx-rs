@@ -1,22 +1,44 @@
 # NuttX Rust Bindings
 
-Safe Rust bindings for the NuttX RTOS API, supporting both `std` and `no_std` environments.
+Safe Rust bindings for the NuttX RTOS API, providing a Rust-idiomatic interface to interact with NuttX's native C API. These bindings support both `std` and `no_std` environments, making them suitable for resource-constrained embedded systems running NuttX.
+
+## Project Goals
+
+- Provide safe, idiomatic Rust APIs for NuttX system interfaces
+- Support both `std` and `no_std` environments
+- Maintain minimal runtime overhead compared to direct C API usage
+- Follow Rust best practices for error handling and resource management
+
+## Environment Setup
+
+### Requirements
+
+- Configured NuttX build directory
+
+### Environment Variables
+
+This crate requires the following environment variable to be set:
+
+- `NUTTX_INCLUDE_DIR` - Path to your NuttX build directory containing the compiled NuttX code and headers
+
+Example setup:
+
+```bash
+# Set the environment variable to your NuttX build directory
+export NUTTX_INCLUDE_DIR=nuttx/include:nuttx/include/arch
+
+# Build your Rust project
+cargo build
+```
 
 ## Features
-
-**Important Note:** The optional features must match the corresponding configuration in your NuttX build. For example, enabling `fb_overlay` requires `CONFIG_FB_OVERLAY=y` in your NuttX configuration.
 
 **Input Devices**
   - Touchscreen
 
 **Video**
-  - Framebuffer
-  - Display information
-  - Optional features:
-    - FB overlay support (`fb_overlay`)
-    - FB module info support (`fb_moduleinfo`)
-    - FB update support (`fb_update`)
-    - FB sync support (`fb_sync`)
+  - Framebuffer access
+  - Display information queries
 
 ## Usage
 
@@ -32,9 +54,8 @@ Enable optional features as needed:
 ```toml
 [dependencies.nuttx]
 version = "0.1"
-features = ["fb_overlay", "fb_update"]
 ```
 
 ## Safety
 
-This crate uses `unsafe` blocks to interface with NuttX's C API. All public APIs are designed to be safe to use, with proper error handling and resource management.
+This crate uses `unsafe` blocks to interface with NuttX's C API. All public APIs are designed to be safe to use, with proper error handling and resource management through RAII patterns (like implementing `Drop` for resource cleanup).
