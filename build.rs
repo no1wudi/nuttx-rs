@@ -1,5 +1,5 @@
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 fn main() {
     // Get the NUTTX_INCLUDE_DIR environment variable, error if not set
